@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Begotorch</string>
+    <string name="tile_label">Torch</string>
+    <string name="torch_off">Off</string>
+    <string name="torch_on">On</string>
+    <string name="turn_on">Turn On</string>
+    <string name="turn_off">Turn Off</string>
+    <string name="telemetry_format">Per LED: %1$s • Dual Total: %2$s (Sel %3$d)</string>
+    <string name="presets_header">Supported Kernel Hardware Stops</string>
+    <string name="accessibility_service_description">Displays the Flashlight Strength dialog directly over the Android Control Center without collapsing Quick Settings.</string>
+</resources>

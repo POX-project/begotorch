@@ -1,0 +1,99 @@
+name: Build and Package Begoker Torch APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Accept Android SDK Licenses
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses 2>/dev/null || true
+
+      - name: Grant Execute Permission to Gradlew
+        run: chmod +x gradlew
+
+      - name: Build APK with Gradle
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Prepare Artifacts and Checksums
+        run: |
+          mkdir -p out
+          cp app/build/outputs/apk/debug/app-debug.apk out/begotorch.apk
+          cp app/build/outputs/apk/debug/app-debug.apk out/begotorch-v1.0.0.apk
+          (cd out && sha256sum begotorch.apk > begotorch.apk.sha256)
+          (cd out && sha256sum begotorch-v1.0.0.apk > begotorch-v1.0.0.apk.sha256)
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: begotorch-apk
+          path: |
+            out/*.apk
+            out/*.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish Rolling Release (Main Branch)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Begoker Torch (Latest Continuous Build)"
+          body: |
+            ### Automated Continuous Build
+            - **Commit**: `${{ github.sha }}`
+            - **Branch**: `main`
+            - **Package**: `begotorch.apk`
+            - **Features**: Quick Settings Tile (`BegotorchTileService`), In-Shade Non-Collapsing Intensity Overlay, Material 3 & Apple Slider UI styles.
+          files: |
+            out/begotorch.apk
+            out/begotorch.apk.sha256
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Tagged Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            out/begotorch.apk
+            out/begotorch.apk.sha256
+            out/begotorch-*.apk
+            out/begotorch-*.apk.sha256
+          name: "Begoker Torch ${{ github.ref_name }}"
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

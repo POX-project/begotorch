@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Sleek iOS Style Flashlight Vector -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M16,6 C16,4.895 16.895,4 18,4 L30,4 C31.105,4 32,4.895 32,6 L32,10 C32,10.6 31.7,11.2 31.2,11.6 L28,15 L28,40 C28,42.209 26.209,44 24,44 L24,44 C21.791,44 20,42.209 20,40 L20,15 L16.8,11.6 C16.3,11.2 16,10.6 16,10 Z M24,20 C22.895,20 22,20.895 22,22 C22,23.105 22.895,24 24,24 C25.105,24 26,23.105 26,22 C26,20.895 25.105,20 24,20 Z"/>
+</vector>

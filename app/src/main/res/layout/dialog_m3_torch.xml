@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/m3_dialog_card"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
+    android:background="@drawable/bg_m3_dialog_surface"
+    android:clipToPadding="false"
+    android:elevation="10dp"
+    android:orientation="vertical"
+    android:paddingStart="24dp"
+    android:paddingTop="24dp"
+    android:paddingEnd="24dp"
+    android:paddingBottom="20dp">
+
+    <!-- Top Header Row: Icon + Title + M3 Switch -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <!-- Tonal Circular Torch Icon -->
+        <FrameLayout
+            android:id="@+id/fl_icon_container"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_m3_icon_tonal">
+
+            <ImageView
+                android:id="@+id/iv_header_torch"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_qs_torch_on" />
+        </FrameLayout>
+
+        <!-- Title & Dynamic Subtitle -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_dialog_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:text="Flashlight Strength"
+                android:textColor="#E6E1E5"
+                android:textSize="19sp" />
+
+            <TextView
+                android:id="@+id/tv_dialog_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:fontFamily="sans-serif"
+                android:text="@string/torch_off"
+                android:textColor="#938F99"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- M3 Power Switch -->
+        <Switch
+            android:id="@+id/switch_torch_power"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:thumbTint="#FFD23F"
+            android:trackTint="#49454F" />
+    </LinearLayout>
+
+    <!-- Telemetry Chip -->
+    <TextView
+        android:id="@+id/tv_dialog_telemetry"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_m3_telemetry_chip"
+        android:fontFamily="monospace"
+        android:paddingStart="12dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="4dp"
+        android:textColor="#FFD23F"
+        android:textSize="11sp"
+        android:visibility="gone" />
+
+    <!-- Material 3 Expressive Slider -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:fontFamily="sans-serif-medium"
+        android:letterSpacing="0.06"
+        android:text="INTENSITY SLIDER"
+        android:textColor="#79747E"
+        android:textSize="10sp"
+        android:textStyle="bold" />
+
+    <com.begoker.torch.ui.M3TorchSliderView
+        android:id="@+id/m3_torch_slider"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginTop="8dp" />
+
+    <!-- Hardware Stops Section Header -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:fontFamily="sans-serif-medium"
+        android:letterSpacing="0.06"
+        android:text="SUPPORTED HARDWARE STOPS"
+        android:textColor="#79747E"
+        android:textSize="10sp"
+        android:textStyle="bold" />
+
+    <!-- Horizontal Scrollable M3 Stop Tiles -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:fadingEdgeLength="16dp"
+        android:requiresFadingEdge="horizontal"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/m3_stop_tiles_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
+
+    <!-- Bottom Done Button -->
+    <Button
+        android:id="@+id/btn_dialog_done"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/bg_m3_btn_done"
+        android:fontFamily="sans-serif-medium"
+        android:stateListAnimator="@null"
+        android:text="Done"
+        android:textAllCaps="false"
+        android:textColor="#1D1B20"
+        android:textSize="14sp" />
+
+</LinearLayout>
