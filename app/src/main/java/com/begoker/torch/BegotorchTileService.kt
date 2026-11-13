@@ -64,7 +64,17 @@ class BegotorchTileService : TileService(), BegokerTorchManager.TorchStateListen
             val targetStop = torchManager.getLastSavedLevel()
             Log.d(TAG, "Tile is OFF -> turning ON to saved stop $targetStop and presenting Flashlight Strength overlay")
             torchManager.setBrightness(targetStop)
-            FlashlightStrengthOverlay.getInstance(this).show()
+            val overlay = FlashlightStrengthOverlay.getInstance(this)
+            if (overlay.canShowOverlay()) {
+                overlay.show()
+            } else {
+                try {
+                    val dialog = com.begoker.torch.ui.Material3TorchDialogHelper.buildDialog(this, torchManager)
+                    showDialog(dialog)
+                } catch (e: Exception) {
+                    Log.w(TAG, "showDialog failed: ${e.message}")
+                }
+            }
         }
     }
 
