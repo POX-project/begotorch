@@ -27,8 +27,18 @@ class TorchAccessibilityService : AccessibilityService() {
         Log.d(TAG, "TorchAccessibilityService interrupted")
     }
 
+    override fun onUnbind(intent: Intent?): Boolean {
+        Log.d(TAG, "TorchAccessibilityService unbinding - dismissing overlay")
+        FlashlightStrengthOverlay.getInstance(this).dismiss()
+        if (activeService == this) {
+            activeService = null
+        }
+        return super.onUnbind(intent)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        FlashlightStrengthOverlay.getInstance(this).dismiss()
         if (activeService == this) {
             activeService = null
         }

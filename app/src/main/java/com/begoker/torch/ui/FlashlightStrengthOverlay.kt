@@ -43,12 +43,16 @@ class FlashlightStrengthOverlay private constructor(private val appContext: Cont
     val isShowing: Boolean
         get() = overlayView != null && !isDismissing
 
+    fun canShowOverlay(): Boolean {
+        return TorchAccessibilityService.isRunning() || Settings.canDrawOverlays(appContext)
+    }
+
     fun show() {
         if (overlayView != null) {
             if (isDismissing) {
                 // Cancel pending dismissal and re-create view immediately
                 val card = overlayView?.findViewById<View>(R.id.dialog_card)
-                card?.animate()?.cancel()
+                card?.animate()?.setListener(null)?.cancel()
                 try {
                     currentWindowManager?.removeViewImmediate(overlayView)
                 } catch (e: Exception) {}
@@ -192,14 +196,34 @@ class FlashlightStrengthOverlay private constructor(private val appContext: Cont
         val wm = currentWindowManager ?: appContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
         val card = view.findViewById<View>(R.id.dialog_card)
 
-        card?.animate()
-            ?.alpha(0f)
-            ?.scaleX(0.92f)
-            ?.scaleY(0.92f)
-            ?.setDuration(120)
-            ?.withEndAction {
-                try {
+        if (card == null) {
+            try {
+                if (view.isAttachedToWindow) {
                     wm.removeView(view)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Error removing overlay view immediately: ${e.message}")
+            } finally {
+                cleanupViews()
+                isDismissing = false
+            }
+            return
+        }
+
+        card.animate()
+            ?.setListener(null)
+            ?.cancel()
+
+        card.animate()
+            .alpha(0f)
+            .scaleX(0.92f)
+            .scaleY(0.92f)
+            .setDuration(120)
+            .withEndAction {
+                try {
+                    if (view.isAttachedToWindow) {
+                        wm.removeView(view)
+                    }
                 } catch (e: Exception) {
                     Log.w(TAG, "Error removing overlay view: ${e.message}")
                 } finally {
@@ -207,16 +231,7 @@ class FlashlightStrengthOverlay private constructor(private val appContext: Cont
                     isDismissing = false
                 }
             }
-            ?.start() ?: run {
-            try {
-                wm.removeView(view)
-            } catch (e: Exception) {
-                Log.w(TAG, "Error removing overlay view immediately: ${e.message}")
-            } finally {
-                cleanupViews()
-                isDismissing = false
-            }
-        }
+            .start()
     }
 
     private fun cleanupViews() {
