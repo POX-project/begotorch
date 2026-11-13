@@ -245,7 +245,8 @@ class BegokerTorchManager private constructor(private val context: Context) {
      * Reads the current brightness from the kernel.
      */
     fun readCurrentHardwareBrightness(): Int {
-        for (nodePath in READABLE_NODES) {
+        val nodes = testReadableNodes ?: READABLE_NODES
+        for (nodePath in nodes) {
             val file = File(nodePath)
             if (file.exists() && file.canRead()) {
                 try {
@@ -266,7 +267,7 @@ class BegokerTorchManager private constructor(private val context: Context) {
      * Reads and parses /proc/perfmgr/torch_info for live telemetry.
      */
     fun readTorchInfo(): KernelTorchInfo? {
-        val file = File(INFO_NODE)
+        val file = File(testInfoNode ?: INFO_NODE)
         if (!file.exists() || !file.canRead()) return null
 
         try {
@@ -335,6 +336,9 @@ class BegokerTorchManager private constructor(private val context: Context) {
         )
 
         private const val INFO_NODE = "/proc/perfmgr/torch_info"
+
+        internal var testReadableNodes: List<String>? = null
+        internal var testInfoNode: String? = null
 
         @Volatile
         private var INSTANCE: BegokerTorchManager? = null
