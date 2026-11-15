@@ -13,6 +13,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 /**
  * High-performance hardware bridge for the Begoker kernel flashlight subsystem.
@@ -47,9 +48,92 @@ class BegokerTorchManager private constructor(private val context: Context) {
     @Volatile
     private var currentLevel: Int = 0
 
+    @Volatile
+    private var isWriting: Boolean = false
+
+    @Volatile
+    private var suAvailable: Boolean = true
+
+    @Volatile
+    private var cachedFlashCameraId: String? = null
+
+    @Volatile
+    private var cachedMaxCameraTorchLevel: Int = 1
+
+    private var cameraTorchCallback: CameraManager.TorchCallback? = null
+
     init {
-        // Read initial hardware state
-        currentLevel = readCurrentHardwareBrightness()
+        // Asynchronously read initial hardware state to prevent main thread ANR / StrictMode violations
+        executor.execute {
+            val hw = readCurrentHardwareBrightness()
+            if (hw != currentLevel) {
+                currentLevel = hw
+                val stop = TorchStop.fromLevel(hw)
+                mainHandler.post {
+                    for (listener in listeners) {
+                        listener.onTorchStateChanged(hw, stop)
+                    }
+                }
+            }
+        }
+        initCameraManager()
+    }
+
+    private fun initCameraManager() {
+        try {
+            val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as? CameraManager ?: return
+            for (id in cameraManager.cameraIdList) {
+                val chars = cameraManager.getCameraCharacteristics(id)
+                if (chars.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true) {
+                    cachedFlashCameraId = id
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        cachedMaxCameraTorchLevel =
+                            chars.get(CameraCharacteristics.FLASH_INFO_STRENGTH_MAXIMUM_LEVEL) ?: 1
+                    }
+                    break
+                }
+            }
+
+            val callback = object : CameraManager.TorchCallback() {
+                override fun onTorchModeChanged(cameraId: String, enabled: Boolean) {
+                    if (cameraId == cachedFlashCameraId) {
+                        // If state changed externally (e.g. system QS tile or camera app)
+                        val targetLevel = if (enabled) {
+                            if (currentLevel > 0) currentLevel else getLastSavedLevel()
+                        } else {
+                            0
+                        }
+                        if (!isWriting && currentLevel != targetLevel) {
+                            currentLevel = targetLevel
+                            val stop = TorchStop.fromLevel(targetLevel)
+                            mainHandler.post {
+                                for (listener in listeners) {
+                                    listener.onTorchStateChanged(targetLevel, stop)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                override fun onTorchModeUnavailable(cameraId: String) {
+                    if (cameraId == cachedFlashCameraId) {
+                        if (!isWriting && currentLevel != 0) {
+                            currentLevel = 0
+                            val stop = TorchStop.fromLevel(0)
+                            mainHandler.post {
+                                for (listener in listeners) {
+                                    listener.onTorchStateChanged(0, stop)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            cameraTorchCallback = callback
+            cameraManager.registerTorchCallback(callback, mainHandler)
+        } catch (e: Exception) {
+            Log.w(TAG, "CameraManager init failed: ${e.message}")
+        }
     }
 
     fun addListener(listener: TorchStateListener) {
@@ -79,9 +163,6 @@ class BegokerTorchManager private constructor(private val context: Context) {
             prefs.edit().putInt(KEY_LAST_LEVEL, level).apply()
         }
     }
-
-    @Volatile
-    private var isWriting: Boolean = false
 
     /**
      * Sets flashlight intensity stop (0 for OFF, 1..10 for graded kernel levels).
@@ -119,6 +200,21 @@ class BegokerTorchManager private constructor(private val context: Context) {
             } finally {
                 isWriting = false
             }
+
+            if (!success) {
+                // If write failed, resync state to real hardware status
+                val actual = readCurrentHardwareBrightness()
+                if (actual != currentLevel) {
+                    currentLevel = actual
+                    val fallbackStop = TorchStop.fromLevel(actual)
+                    mainHandler.post {
+                        for (listener in listeners) {
+                            listener.onTorchStateChanged(actual, fallbackStop)
+                        }
+                    }
+                }
+            }
+
             mainHandler.post {
                 try {
                     android.service.quicksettings.TileService.requestListeningState(
@@ -149,10 +245,42 @@ class BegokerTorchManager private constructor(private val context: Context) {
     }
 
     /**
+     * Asynchronously synchronizes current level with actual kernel hardware status without blocking the UI.
+     */
+    fun syncHardwareStateAsync(callback: ((Int) -> Unit)? = null) {
+        if (isWriting) {
+            callback?.invoke(currentLevel)
+            return
+        }
+        executor.execute {
+            val hw = readCurrentHardwareBrightness()
+            if (hw != currentLevel) {
+                currentLevel = hw
+                val stop = TorchStop.fromLevel(hw)
+                mainHandler.post {
+                    for (listener in listeners) {
+                        listener.onTorchStateChanged(hw, stop)
+                    }
+                    callback?.invoke(hw)
+                }
+            } else {
+                mainHandler.post {
+                    callback?.invoke(hw)
+                }
+            }
+        }
+    }
+
+    /**
      * Synchronizes current level with actual kernel hardware status.
+     * Non-blocking when called on main thread; dispatches background check.
      */
     fun syncHardwareState(): Int {
         if (isWriting) {
+            return currentLevel
+        }
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            syncHardwareStateAsync()
             return currentLevel
         }
         val hw = readCurrentHardwareBrightness()
@@ -173,11 +301,12 @@ class BegokerTorchManager private constructor(private val context: Context) {
      */
     private fun writeKernelBrightness(level: Int): Boolean {
         val payload = "$level\n".toByteArray()
+        val writableNodes = customWritableNodes ?: WRITABLE_NODES
 
         // 1. Try direct file write to rootless Begoker nodes
-        for (nodePath in WRITABLE_NODES) {
+        for (nodePath in writableNodes) {
             val nodeFile = File(nodePath)
-            if (nodeFile.exists() && nodeFile.canWrite()) {
+            if (nodeFile.exists()) {
                 try {
                     FileOutputStream(nodeFile).use { fos ->
                         fos.write(payload)
@@ -192,16 +321,36 @@ class BegokerTorchManager private constructor(private val context: Context) {
         }
 
         // 2. Try root 'su' command write if device is rooted but nodes have restrictive SELinux
-        for (nodePath in WRITABLE_NODES) {
-            try {
-                val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "echo $level > $nodePath"))
-                val exitCode = process.waitFor()
-                if (exitCode == 0) {
-                    Log.d(TAG, "Su wrote level $level to $nodePath")
-                    return true
+        if (suAvailable) {
+            var suSucceeded = false
+            for (nodePath in writableNodes) {
+                val nodeFile = File(nodePath)
+                if (nodeFile.exists()) {
+                    try {
+                        val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "echo $level > $nodePath"))
+                        val finished = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            process.waitFor(300, TimeUnit.MILLISECONDS)
+                        } else {
+                            process.waitFor()
+                            true
+                        }
+                        if (finished && process.exitValue() == 0) {
+                            Log.d(TAG, "Su wrote level $level to $nodePath")
+                            suSucceeded = true
+                            return true
+                        } else {
+                            process.destroyForcibly()
+                        }
+                    } catch (e: Exception) {
+                        Log.d(TAG, "su execution unavailable: ${e.message}")
+                        suAvailable = false
+                        break
+                    }
                 }
-            } catch (e: Exception) {
-                // Ignore, proceed to fallback
+            }
+            if (!suSucceeded) {
+                // Short-circuit future su attempts to avoid lagging the executor
+                suAvailable = false
             }
         }
 
@@ -213,7 +362,7 @@ class BegokerTorchManager private constructor(private val context: Context) {
         try {
             val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as? CameraManager
                 ?: return false
-            val cameraId = cameraManager.cameraIdList.firstOrNull { id ->
+            val cameraId = cachedFlashCameraId ?: cameraManager.cameraIdList.firstOrNull { id ->
                 val chars = cameraManager.getCameraCharacteristics(id)
                 chars.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
             } ?: return false
@@ -224,8 +373,7 @@ class BegokerTorchManager private constructor(private val context: Context) {
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                val chars = cameraManager.getCameraCharacteristics(cameraId)
-                val maxLevel = chars.get(CameraCharacteristics.FLASH_INFO_STRENGTH_MAXIMUM_LEVEL) ?: 1
+                val maxLevel = cachedMaxCameraTorchLevel
                 if (maxLevel > 1) {
                     val mapped = ((level.toFloat() / 10f) * maxLevel).toInt().coerceIn(1, maxLevel)
                     cameraManager.turnOnTorchWithStrengthLevel(cameraId, mapped)
@@ -245,9 +393,10 @@ class BegokerTorchManager private constructor(private val context: Context) {
      * Reads the current brightness from the kernel.
      */
     fun readCurrentHardwareBrightness(): Int {
-        for (nodePath in READABLE_NODES) {
+        val readableNodes = customReadableNodes ?: READABLE_NODES
+        for (nodePath in readableNodes) {
             val file = File(nodePath)
-            if (file.exists() && file.canRead()) {
+            if (file.exists()) {
                 try {
                     val content = file.readText().trim()
                     val value = content.toIntOrNull()
@@ -266,7 +415,8 @@ class BegokerTorchManager private constructor(private val context: Context) {
      * Reads and parses /proc/perfmgr/torch_info for live telemetry.
      */
     fun readTorchInfo(): KernelTorchInfo? {
-        val file = File(INFO_NODE)
+        val infoPath = customInfoNode ?: INFO_NODE
+        val file = File(infoPath)
         if (!file.exists() || !file.canRead()) return null
 
         try {
@@ -284,15 +434,12 @@ class BegokerTorchManager private constructor(private val context: Context) {
                     when (key) {
                         "brightness" -> brightness = value.toIntOrNull() ?: 0
                         "hardware_selector" -> {
-                            // "6 (0..24)"
                             selector = value.substringBefore(" ").toIntOrNull() ?: 0
                         }
                         "current_per_channel" -> {
-                            // "100 mA"
                             currentMa = value.substringBefore(" ").toIntOrNull() ?: 0
                         }
                         "current_total_dual" -> {
-                            // "200 mA"
                             dualMa = value.substringBefore(" ").toIntOrNull() ?: 0
                         }
                         "status" -> status = value.equals("on", ignoreCase = true)
@@ -318,6 +465,13 @@ class BegokerTorchManager private constructor(private val context: Context) {
         private const val PREFS_NAME = "begotorch_prefs"
         private const val KEY_LAST_LEVEL = "last_torch_level"
         private const val DEFAULT_RESTORE_LEVEL = 4 // Stock Xiaomi 100 mA standard
+
+        @Volatile
+        var customWritableNodes: List<String>? = null
+        @Volatile
+        var customReadableNodes: List<String>? = null
+        @Volatile
+        var customInfoNode: String? = null
 
         private val WRITABLE_NODES = listOf(
             "/proc/perfmgr/torch_brightness",

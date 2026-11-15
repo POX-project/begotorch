@@ -26,8 +26,9 @@ class BegotorchTileService : TileService(), BegokerTorchManager.TorchStateListen
     override fun onStartListening() {
         super.onStartListening()
         torchManager.addListener(this)
-        val currentLevel = torchManager.syncHardwareState()
-        updateTileState(currentLevel, torchManager.getCurrentStop())
+        torchManager.syncHardwareStateAsync { level ->
+            updateTileState(level, torchManager.getCurrentStop())
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
