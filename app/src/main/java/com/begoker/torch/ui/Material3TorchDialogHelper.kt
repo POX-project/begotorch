@@ -107,7 +107,7 @@ class Material3TorchDialogHelper(
             TorchStop.STOPS[4],
             TorchStop.STOPS[6],
             TorchStop.STOPS[8],
-            TorchStop.STOPS[10]
+            TorchStop.STOPS[20]
         )
 
         for (stop in stopsToDisplay) {

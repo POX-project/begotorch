@@ -115,7 +115,7 @@ class M3TorchSliderView @JvmOverloads constructor(
         }
 
         // Draw stop tick notches (levels 1 through 9)
-        val stopsCount = 10
+        val stopsCount = 20
         val stepWidth = trackBounds.width() / stopsCount
         for (i in 1 until stopsCount) {
             val x = trackBounds.left + (stepWidth * i)

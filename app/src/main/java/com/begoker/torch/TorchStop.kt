@@ -5,6 +5,8 @@ package com.begoker.torch
  *
  * Current per channel formula: 25mA + (selector * 12.5mA)
  * Dual LED total current = Current per channel * 2
+ *
+ * 20-step grading (levels 0..20).
  */
 data class TorchStop(
     val level: Int,
@@ -34,30 +36,38 @@ data class TorchStop(
             ),
             TorchStop(
                 level = 1,
-                selector = 0,
-                currentMaPerChannel = 25.0,
-                totalDualMa = 50.0,
+                selector = 1,
+                currentMaPerChannel = 37.5,
+                totalDualMa = 75.0,
                 title = "Bedside",
-                subtitle = "25 mA • Dim Reading"
+                subtitle = "37 mA • Dim Reading"
             ),
             TorchStop(
                 level = 2,
                 selector = 2,
                 currentMaPerChannel = 50.0,
                 totalDualMa = 100.0,
-                title = "Soft",
-                subtitle = "50 mA • Soft Glow"
+                title = "Level 2",
+                subtitle = "50 mA"
             ),
             TorchStop(
                 level = 3,
                 selector = 4,
                 currentMaPerChannel = 75.0,
                 totalDualMa = 150.0,
-                title = "Low",
-                subtitle = "75 mA • Ambient"
+                title = "Level 3",
+                subtitle = "75 mA"
             ),
             TorchStop(
                 level = 4,
+                selector = 5,
+                currentMaPerChannel = 87.5,
+                totalDualMa = 175.0,
+                title = "Level 4",
+                subtitle = "87 mA"
+            ),
+            TorchStop(
+                level = 5,
                 selector = 6,
                 currentMaPerChannel = 100.0,
                 totalDualMa = 200.0,
@@ -66,15 +76,39 @@ data class TorchStop(
                 isStockLimit = true
             ),
             TorchStop(
-                level = 5,
-                selector = 9,
-                currentMaPerChannel = 137.5,
-                totalDualMa = 275.0,
-                title = "Medium",
-                subtitle = "138 mA • Enhanced"
+                level = 6,
+                selector = 7,
+                currentMaPerChannel = 112.5,
+                totalDualMa = 225.0,
+                title = "Level 6",
+                subtitle = "112 mA"
             ),
             TorchStop(
-                level = 6,
+                level = 7,
+                selector = 8,
+                currentMaPerChannel = 125.0,
+                totalDualMa = 250.0,
+                title = "Level 7",
+                subtitle = "125 mA"
+            ),
+            TorchStop(
+                level = 8,
+                selector = 10,
+                currentMaPerChannel = 150.0,
+                totalDualMa = 300.0,
+                title = "Level 8",
+                subtitle = "150 mA"
+            ),
+            TorchStop(
+                level = 9,
+                selector = 11,
+                currentMaPerChannel = 162.5,
+                totalDualMa = 325.0,
+                title = "Level 9",
+                subtitle = "162 mA"
+            ),
+            TorchStop(
+                level = 10,
                 selector = 12,
                 currentMaPerChannel = 175.0,
                 totalDualMa = 350.0,
@@ -82,31 +116,79 @@ data class TorchStop(
                 subtitle = "175 mA • Night Walk"
             ),
             TorchStop(
-                level = 7,
-                selector = 15,
-                currentMaPerChannel = 212.5,
-                totalDualMa = 425.0,
-                title = "High",
-                subtitle = "213 mA • Outdoor"
+                level = 11,
+                selector = 13,
+                currentMaPerChannel = 187.5,
+                totalDualMa = 375.0,
+                title = "Level 11",
+                subtitle = "187 mA"
             ),
             TorchStop(
-                level = 8,
+                level = 12,
+                selector = 14,
+                currentMaPerChannel = 200.0,
+                totalDualMa = 400.0,
+                title = "Level 12",
+                subtitle = "200 mA"
+            ),
+            TorchStop(
+                level = 13,
+                selector = 16,
+                currentMaPerChannel = 225.0,
+                totalDualMa = 450.0,
+                title = "Level 13",
+                subtitle = "225 mA"
+            ),
+            TorchStop(
+                level = 14,
+                selector = 17,
+                currentMaPerChannel = 237.5,
+                totalDualMa = 475.0,
+                title = "Level 14",
+                subtitle = "237 mA"
+            ),
+            TorchStop(
+                level = 15,
                 selector = 18,
                 currentMaPerChannel = 250.0,
                 totalDualMa = 500.0,
-                title = "Very High",
-                subtitle = "250 mA • Spotlight"
+                title = "High",
+                subtitle = "250 mA • Outdoor"
             ),
             TorchStop(
-                level = 9,
-                selector = 21,
-                currentMaPerChannel = 287.5,
-                totalDualMa = 575.0,
-                title = "Ultra",
-                subtitle = "288 mA • High Beam"
+                level = 16,
+                selector = 19,
+                currentMaPerChannel = 262.5,
+                totalDualMa = 525.0,
+                title = "Level 16",
+                subtitle = "262 mA"
             ),
             TorchStop(
-                level = 10,
+                level = 17,
+                selector = 20,
+                currentMaPerChannel = 275.0,
+                totalDualMa = 550.0,
+                title = "Level 17",
+                subtitle = "275 mA"
+            ),
+            TorchStop(
+                level = 18,
+                selector = 22,
+                currentMaPerChannel = 300.0,
+                totalDualMa = 600.0,
+                title = "Level 18",
+                subtitle = "300 mA"
+            ),
+            TorchStop(
+                level = 19,
+                selector = 23,
+                currentMaPerChannel = 312.5,
+                totalDualMa = 625.0,
+                title = "Level 19",
+                subtitle = "312 mA"
+            ),
+            TorchStop(
+                level = 20,
                 selector = 24,
                 currentMaPerChannel = 325.0,
                 totalDualMa = 650.0,
@@ -116,30 +198,22 @@ data class TorchStop(
             )
         )
 
-        /**
-         * The 4 classic iOS Control Center milestone stops:
-         * Stop 0: Off
-         * Stop 1: 25 mA (Level 1)
-         * Stop 2: 100 mA (Level 4, Xiaomi Stock)
-         * Stop 3: 213 mA (Level 7, High)
-         * Stop 4: 325 mA (Level 10, Max Overdrive)
-         */
         val IOS_STOPS = listOf(
             STOPS[0],  // Off
-            STOPS[1],  // 25 mA
-            STOPS[4],  // 100 mA
-            STOPS[7],  // 213 mA
-            STOPS[10]  // 325 mA Max
+            STOPS[1],  // dim
+            STOPS[5],  // stock 100 mA
+            STOPS[11], // high
+            STOPS[20]  // max overdrive
         )
 
         fun fromLevel(level: Int): TorchStop {
-            val clamped = level.coerceIn(0, 10)
+            val clamped = level.coerceIn(0, 20)
             return STOPS.getOrNull(clamped) ?: STOPS[0]
         }
 
         fun fromFraction(fraction: Float): TorchStop {
             if (fraction <= 0.02f) return STOPS[0]
-            val index = Math.round(fraction * 10).coerceIn(1, 10)
+            val index = Math.round(fraction * 20).coerceIn(1, 20)
             return STOPS[index]
         }
 

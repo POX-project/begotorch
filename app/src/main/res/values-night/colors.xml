@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ios_black">#000000</color>
+    <color name="ios_card_bg">#D91C1C1E</color>
+    <color name="ios_pill_bg">#28282A</color>
+    <color name="ios_torch_yellow">#FFD23F</color>
+    <color name="ios_torch_warm">#FFF3B0</color>
+    <color name="ios_torch_overdrive">#FFFFFF</color>
+    <color name="ios_text_primary">#FFFFFF</color>
+    <color name="ios_text_secondary">#98989D</color>
+    <color name="ios_button_off">#2C2C2E</color>
+    <color name="ios_button_on">#FF9F0A</color>
+    <color name="chip_bg">#242426</color>
+</resources>

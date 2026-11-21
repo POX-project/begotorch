@@ -88,7 +88,7 @@ class FlashlightBeamSliderView @JvmOverloads constructor(
     var isTracking: Boolean = false
         private set
 
-    private var currentFraction = 0.333f // 0f to 1.0f (maps to levels 1..10)
+    private var currentFraction = 0.333f // 0f to 1.0f (maps to levels 1..20)
     private var lastHapticLevel = -1
     private var activeStop: TorchStop = TorchStop.STOPS[4]
     private var animator: ValueAnimator? = null
@@ -329,14 +329,14 @@ class FlashlightBeamSliderView @JvmOverloads constructor(
 
     companion object {
         fun stopToFraction(level: Int): Float {
-            val clamped = level.coerceIn(1, 10)
-            return (clamped - 1) / 9f
+            val clamped = level.coerceIn(1, 20)
+            return (clamped - 1) / 19f
         }
 
         fun fractionToStop(fraction: Float): TorchStop {
             val clamped = fraction.coerceIn(0f, 1f)
-            val index = Math.round(clamped * 9).coerceIn(0, 9)
-            return TorchStop.STOPS[index + 1] // Stops 1..10
+            val index = Math.round(clamped * 19).coerceIn(0, 19)
+            return TorchStop.STOPS[index + 1] // Stops 1..20
         }
     }
 }
