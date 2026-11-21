@@ -41,6 +41,7 @@ class Material3TorchDialogHelper(
     private lateinit var slider: M3TorchSliderView
     private lateinit var tilesContainer: LinearLayout
     private lateinit var btnDone: Button
+    private lateinit var btnThemeToggle: Button
     private lateinit var ivHeaderTorch: ImageView
 
     private val tileViews = mutableListOf<Pair<TorchStop, View>>()
@@ -55,10 +56,12 @@ class Material3TorchDialogHelper(
         slider = rootView.findViewById(R.id.m3_torch_slider)
         tilesContainer = rootView.findViewById(R.id.m3_stop_tiles_container)
         btnDone = rootView.findViewById(R.id.btn_dialog_done)
+        btnThemeToggle = rootView.findViewById(R.id.btn_theme_toggle)
         ivHeaderTorch = rootView.findViewById(R.id.iv_header_torch)
 
         setupListeners()
         populateM3StopTiles()
+        applyTheme()
 
         val currentStop = torchManager.getCurrentStop()
         updateUi(currentStop)
@@ -93,6 +96,36 @@ class Material3TorchDialogHelper(
         btnDone.setOnClickListener {
             onDismissRequested()
         }
+
+        btnThemeToggle.setOnClickListener {
+            val prefs = context.getSharedPreferences("begotorch_prefs", Context.MODE_PRIVATE)
+            val dark = prefs.getBoolean("dark_mode", true)
+            prefs.edit().putBoolean("dark_mode", !dark).apply()
+            applyTheme()
+        }
+    }
+
+    private fun isDarkMode(): Boolean {
+        return context.getSharedPreferences("begotorch_prefs", Context.MODE_PRIVATE)
+            .getBoolean("dark_mode", true)
+    }
+
+    private fun applyTheme() {
+        val dark = isDarkMode()
+        val cardBg = if (dark) "#1C1B1F" else "#FFFFFF"
+        val titleColor = if (dark) "#E6E1E5" else "#1D1B20"
+        val statusColor = if (dark) "#938F99" else "#49454F"
+        val btnText = if (dark) "#1D1B20" else "#FFFFFF"
+        val btnBg = if (dark) "#FFD23F" else "#6750A4"
+
+        rootView.setBackgroundColor(Color.parseColor(cardBg))
+        tvTitle.setTextColor(Color.parseColor(titleColor))
+        tvStatus.setTextColor(Color.parseColor(statusColor))
+        btnDone.setTextColor(Color.parseColor(btnText))
+        btnDone.setBackgroundColor(Color.parseColor(btnBg))
+        btnThemeToggle.text = if (dark) "Switch to Light" else "Switch to Dark"
+        btnThemeToggle.setTextColor(Color.parseColor(btnText))
+        btnThemeToggle.setBackgroundColor(Color.parseColor(btnBg))
     }
 
     private fun populateM3StopTiles() {
